@@ -7,18 +7,9 @@ namespace SerialCom.Backend.Config
     {
         public const int NoTimeout = -1;
 
-        private string _terminator = "\n";
-        private int _dataBits = 8;
-        private string _portName = string.Empty;
-        private BaudRateValue _baudRate = BaudRateValue.BR9600;
-        private ParityType _parity = ParityType.None;
-        private StopBitsCount _stopBits = StopBitsCount.One;
-        private FlowControlType _flowControl = FlowControlType.None;
-        private int _readTimeout = NoTimeout;
-        private int _writeTimeout = NoTimeout;
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        private string _portName = string.Empty;
         public string PortName
         { 
             get => _portName; 
@@ -32,6 +23,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private BaudRateValue _baudRate = BaudRateValue.BR9600;
         public BaudRateValue BaudRate
         {
             get => _baudRate;
@@ -45,6 +37,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private int _dataBits = 8;
         public int DataBits
         {
             get => _dataBits;
@@ -62,6 +55,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private ParityType _parity = ParityType.None;
         public ParityType Parity
         {
             get => _parity;
@@ -75,6 +69,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private StopBitsCount _stopBits = StopBitsCount.One;
         public StopBitsCount StopBits
         {
             get => _stopBits;
@@ -88,6 +83,8 @@ namespace SerialCom.Backend.Config
             }
         }
 
+
+        private FlowControlType _flowControl = FlowControlType.None;
         public FlowControlType FlowControl
         {
             get => _flowControl; 
@@ -101,6 +98,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private string _terminator = "\n";
         public string Terminator
         {
             get => _terminator;
@@ -118,6 +116,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private int _readTimeout = NoTimeout;
         public int ReadTimeout
         {
             get => _readTimeout;
@@ -135,6 +134,7 @@ namespace SerialCom.Backend.Config
             }
         }
 
+        private int _writeTimeout = NoTimeout;
         public int WriteTimeout
         {
             get => _writeTimeout;

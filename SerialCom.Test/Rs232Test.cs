@@ -1,6 +1,5 @@
 ﻿using SerialCom.Backend;
 using SerialCom.Backend.Config;
-using Xunit.Abstractions;
 
 namespace SerialCom.Test
 {
@@ -16,7 +15,7 @@ namespace SerialCom.Test
         private readonly string _port2Name = "COM2";
         private readonly int _timeout = 2000;
 
-        public Rs232Test(ITestOutputHelper output)
+        public Rs232Test()
         {
             _conf1 = new SerialConfig(_port1Name)
             {
@@ -48,55 +47,71 @@ namespace SerialCom.Test
             Assert.Contains(_port2Name, portNames);
         }
 
-        [Theory]
-        [MemberData(nameof(Data))]
-        public void ShouldSendFromFirstToSecond(string line)
+        [Fact]
+        public void ShouldPongAfterPing()
         {
+            long? time = null;
             _port1.Open();
             _port2.Open();
-            _port1.WriteLine(line);
-            string response = _port2.ReadLine();
 
-            Assert.Equal(line, response);
+            time = _port1.Ping();
+
+            Assert.NotNull(time);
         }
 
-        [Theory]
-        [MemberData(nameof(Data))]
-        public void ShouldNotReceiveDataWithInvalidTerminator(string line)
+        [Fact]
+        public void ShouldReadEventMessage()
         {
-            _port1.Config.Terminator = @"\/";
-
-            _port1.Open();
-            _port2.Open();
-            _port1.WriteLine(line);
+            const string line = "Test";
             string? response = null;
-
-            Assert.Throws<TimeoutException>(() => response = _port2.ReadLine());
-            Assert.NotEqual(line, response);
-        }
-
-        [Theory]
-        [MemberData(nameof(Data))]
-        public void ShouldTransmitDataWithHardwareHandshake(string line)
-        {
-            _port1.Config.FlowControl = FlowControlType.RtsCts;
-            _port2.Config.FlowControl = FlowControlType.RtsCts;
+            AutoResetEvent waitHandle = new AutoResetEvent(false);
+            _port2.DataReceived += (sender, args) =>
+            {
+                response = args.Data;
+                waitHandle.Set();
+            };
 
             _port1.Open();
             _port2.Open();
             _port1.WriteLine(line);
-            string response = _port2.ReadLine();
 
+            Assert.True(waitHandle.WaitOne(5000, false));
             Assert.Equal(line, response);
         }
 
-        public static IEnumerable<object[]> Data =>
-            new List<object[]>
+        [Fact]
+        public void ShouldReadAfterSend()
+        {
+            const string line1 = "Test";
+            const string line2 = "MoRbIuS";
+            AutoResetEvent waitHandle1 = new AutoResetEvent(false);
+            AutoResetEvent waitHandle2 = new AutoResetEvent(false);
+            string? resp1 = null, resp2 = null;
+
+            _port1.DataReceived += (sender, args) =>
             {
-                new object[] { "Test" },
-                new object[] { "kn1273128" },
-                new object[] { "asdf eqwert" },
-                new object[] { "" }
+                resp2 = args.Data;
+                waitHandle1.Set();
             };
+            _port2.DataReceived += (sender, args) =>
+            {
+                resp1 = args.Data;
+                waitHandle2.Set();
+            };
+
+            _port1.Open();
+            _port2.Open();
+            _port1.WriteLine(line1);
+            _port2.WriteLine(line2);
+
+            Assert.True(waitHandle1.WaitOne(5000, false));
+            Assert.True(waitHandle2.WaitOne(5000, false));
+
+            Assert.NotNull(resp1);
+            Assert.NotNull(resp2);
+
+            Assert.Equal(line1, resp1);
+            Assert.Equal(line2, resp2);
+        }
     }
 }

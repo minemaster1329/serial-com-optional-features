@@ -8,12 +8,26 @@ namespace SerialCom.Backend
 {
     public class Rs232 : IDisposable
     {
+        private enum MessageType
+        {
+            Text,
+            Ping
+        }
+        private static readonly IReadOnlyDictionary<MessageType, string> _messageHeaders =
+            new Dictionary<MessageType, string>()
+            {
+                [MessageType.Text] = @"\t\",
+                [MessageType.Ping] = @"\p\",
+            };
+        
         private SerialPort _port;
         private SerialEnumConverter _converter;
-        private SerialConfig _config;
 
         private bool _disposed = false;
 
+        public event DataReceivedEventHandler? DataReceived;
+
+        private SerialConfig _config;
         public SerialConfig Config
         {
             get => _config;
@@ -38,6 +52,8 @@ namespace SerialCom.Backend
             _converter = new SerialEnumConverter();
 
             _initPortFromConfig();
+
+            _port.DataReceived += _handleDataReceived;
         }
 
         public void Open()
@@ -52,31 +68,46 @@ namespace SerialCom.Backend
 
         public void WriteLine(string line)
         {
-            _port.WriteLine(line);
-        }
-
-        public string ReadLine()
-        {
-            return _port.ReadLine();
+            _port.WriteLine(_messageHeaders[MessageType.Text] + line);
         }
 
         public async Task WriteLineAsync(string line)
         {
-            await Task.Run(() => _port.WriteLine(line));
+            await Task.Run(() => WriteLine(line));
         }
 
-        public async Task<string> ReadLineAsync()
+        private string _readPing()
         {
-            return await Task.Run(() => _port.ReadLine());
+            string data = _port.ReadLine();
+            if (!data.StartsWith(_messageHeaders[MessageType.Ping]))
+            {
+                throw new Exception("Invalid ping header"); // TODO
+            }
+            return data.Substring(_messageHeaders[MessageType.Ping].Length);
         }
 
-        public long Ping()
+        private void _writePing()
+        {
+            _port.WriteLine(_messageHeaders[MessageType.Ping]);
+        }
+
+        public long Ping(Action? callback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            WriteLine("");
-            ReadLine();
+            _writePing();
+            
+            _port.DataReceived -= _handleDataReceived;
+            string resp = _readPing();
             stopwatch.Stop();
+            _port.DataReceived += _handleDataReceived;
+
+            callback?.Invoke();
             return stopwatch.ElapsedMilliseconds;
+        }
+
+        public async Task<long> PingAsync()
+        {
+            return await Task.Run(() => Ping());
         }
 
         public static string[] GetPortNames()
@@ -143,6 +174,20 @@ namespace SerialCom.Backend
             _port.WriteTimeout = Config.WriteTimeout;
         }
 
+        private void _handleDataReceived(object? sender, SerialDataReceivedEventArgs args)
+        {
+            string data = _port.ReadLine();
+            if (data.StartsWith(_messageHeaders[MessageType.Ping]))
+            {
+                _writePing();
+            }
+            if (data.StartsWith(_messageHeaders[MessageType.Text]))
+            {
+                string dataToSend = data.Substring(_messageHeaders[MessageType.Text].Length);
+                DataReceived?.Invoke(this, new DataReceivedEventArgs(dataToSend));
+            }
+        }
+
         #region IDisposable
 
         public void Dispose()
@@ -161,6 +206,7 @@ namespace SerialCom.Backend
                     {
                         _port.Close();
                     }
+                    _port.DataReceived -= _handleDataReceived;
                     _port.Dispose();
                 }
                 _disposed = true;
