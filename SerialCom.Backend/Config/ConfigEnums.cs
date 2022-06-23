@@ -10,7 +10,8 @@
     public enum FlowControlType
     {
         None,
-        Hardware,
+        RtsCts,
+        DtrDsr,
         Software
     }
 

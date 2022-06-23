@@ -1,121 +1,165 @@
-﻿using System.IO.Ports;
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace SerialCom.Backend.Config
 {
-    public class SerialConfig
+    public class SerialConfig: INotifyPropertyChanged
     {
-        private string _terminator = string.Empty;
+        public const int NoTimeout = -1;
+
+        private string _terminator = "\n";
         private int _dataBits = 8;
+        private string _portName = string.Empty;
+        private BaudRateValue _baudRate = BaudRateValue.BR9600;
+        private ParityType _parity = ParityType.None;
+        private StopBitsCount _stopBits = StopBitsCount.One;
+        private FlowControlType _flowControl = FlowControlType.None;
+        private int _readTimeout = NoTimeout;
+        private int _writeTimeout = NoTimeout;
 
-        internal StopBits stopBits = System.IO.Ports.StopBits.One;
-        internal Parity parity = System.IO.Ports.Parity.None;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        public string PortName { get; set; } = string.Empty;
+        public string PortName
+        { 
+            get => _portName; 
+            set
+            {
+                if (value != _portName)
+                {
+                    _portName = value;
+                    _notifyPropertyChanged();
+                }
+            }
+        }
 
-        public BaudRateValue BaudRate { get; set; }
+        public BaudRateValue BaudRate
+        {
+            get => _baudRate;
+            set
+            {
+                if (value != _baudRate)
+                {
+                    _baudRate = value;
+                    _notifyPropertyChanged();
+                }
+            }
+        }
 
         public int DataBits
         {
             get => _dataBits;
             set
             {
-                if (value > 8 || value < 5)
+                if (value != _dataBits)
                 {
-                    throw new InvalidConfigException("Invalid data bit field length");
+                    if (value > 8 || value < 5)
+                    {
+                        throw new InvalidConfigException("Invalid data bit field length");
+                    }
+                    _dataBits = value;
+                    _notifyPropertyChanged();
                 }
-                _dataBits = value;
             }
         }
 
         public ParityType Parity
         {
-            get => _parityToParityType(parity);
-            set => parity = _parityTypeToParity(value);
+            get => _parity;
+            set
+            {
+                if (value != _parity)
+                {
+                    _parity = value;
+                    _notifyPropertyChanged();
+                }
+            }
         }
 
         public StopBitsCount StopBits
         {
-            get => _stopBitsToStopBitsCount(stopBits);
-            set => stopBits = _stopBitsCountToStopBits(value);
+            get => _stopBits;
+            set
+            {
+                if (value != _stopBits)
+                {
+                    _stopBits = value;
+                    _notifyPropertyChanged();
+                }
+            }
         }
 
-        public FlowControlType FlowControl { get; set; }
+        public FlowControlType FlowControl
+        {
+            get => _flowControl; 
+            set
+            {
+                if (value != _flowControl)
+                {
+                    _flowControl = value;
+                    _notifyPropertyChanged();
+                }
+            }
+        }
 
         public string Terminator
         {
             get => _terminator;
             set
             {
-                if (value.Length > 2 || value.Length < 1)
+                if (value != _terminator)
                 {
-                    throw new InvalidConfigException("Invalid terminator length");
+                    if (value.Length > 2 || value.Length < 1)
+                    {
+                        throw new InvalidConfigException("Invalid terminator length");
+                    }
+                    _terminator = value;
+                    _notifyPropertyChanged();
                 }
-                _terminator = value;
             }
         }
 
-        #region Converters
-
-        private static ParityType _parityToParityType(Parity parity)
+        public int ReadTimeout
         {
-            switch (parity)
+            get => _readTimeout;
+            set
             {
-                case System.IO.Ports.Parity.None:
-                    return ParityType.None;
-                case System.IO.Ports.Parity.Even:
-                    return ParityType.Even;
-                case System.IO.Ports.Parity.Odd:
-                    return ParityType.Odd;
-                default:
-                    return ParityType.None;
+                if (value != _readTimeout)
+                {
+                    if (value < 0 && value != NoTimeout)
+                    {
+                        throw new ArgumentException("Invalid timeout value");
+                    }
+                    _readTimeout = value;
+                    _notifyPropertyChanged();
+                }
             }
         }
 
-        private static Parity _parityTypeToParity(ParityType parity)
+        public int WriteTimeout
         {
-            switch (parity)
+            get => _writeTimeout;
+            set
             {
-                case ParityType.None:
-                    return System.IO.Ports.Parity.None;
-                case ParityType.Even:
-                    return System.IO.Ports.Parity.Even;
-                case ParityType.Odd:
-                    return System.IO.Ports.Parity.Odd;
-                default:
-                    return System.IO.Ports.Parity.None;
+                if (value != _writeTimeout)
+                {
+                    if (value < 0 && value != NoTimeout)
+                    {
+                        throw new ArgumentException("Invalid timeout value");
+                    }
+                    _writeTimeout = value;
+                    _notifyPropertyChanged();
+                }
             }
         }
 
-        private static StopBitsCount _stopBitsToStopBitsCount(StopBits stopBits)
+        public SerialConfig(string portName)
         {
-            switch (stopBits)
-            {
-                case System.IO.Ports.StopBits.None:
-                    return StopBitsCount.None;
-                case System.IO.Ports.StopBits.One:
-                    return StopBitsCount.One;
-                case System.IO.Ports.StopBits.Two:
-                    return StopBitsCount.Two;
-                default:
-                    return StopBitsCount.One;
-            }
+            PortName = portName;
         }
 
-        private static StopBits _stopBitsCountToStopBits(StopBitsCount stopBitsCount)
+        private void _notifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
-            switch (stopBitsCount)
-            {
-                case StopBitsCount.None:
-                    return System.IO.Ports.StopBits.None;
-                case StopBitsCount.One:
-                    return System.IO.Ports.StopBits.One;
-                case StopBitsCount.Two:
-                    return System.IO.Ports.StopBits.Two;
-                default:
-                    return System.IO.Ports.StopBits.One;
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-        #endregion
     }
 }
