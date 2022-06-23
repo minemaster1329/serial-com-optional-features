@@ -18,7 +18,7 @@ namespace SerialCom.Backend.Config
                 if (value != _portName)
                 {
                     _portName = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -32,7 +32,7 @@ namespace SerialCom.Backend.Config
                 if (value != _baudRate)
                 {
                     _baudRate = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace SerialCom.Backend.Config
                         throw new InvalidConfigException("Invalid data bit field length");
                     }
                     _dataBits = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -64,7 +64,7 @@ namespace SerialCom.Backend.Config
                 if (value != _parity)
                 {
                     _parity = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -78,7 +78,7 @@ namespace SerialCom.Backend.Config
                 if (value != _stopBits)
                 {
                     _stopBits = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -93,7 +93,7 @@ namespace SerialCom.Backend.Config
                 if (value != _flowControl)
                 {
                     _flowControl = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -111,7 +111,7 @@ namespace SerialCom.Backend.Config
                         throw new InvalidConfigException("Invalid terminator length");
                     }
                     _terminator = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -129,7 +129,7 @@ namespace SerialCom.Backend.Config
                         throw new ArgumentException("Invalid timeout value");
                     }
                     _readTimeout = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -147,7 +147,7 @@ namespace SerialCom.Backend.Config
                         throw new ArgumentException("Invalid timeout value");
                     }
                     _writeTimeout = value;
-                    _notifyPropertyChanged();
+                    NotifyPropertyChanged();
                 }
             }
         }
@@ -157,7 +157,7 @@ namespace SerialCom.Backend.Config
             PortName = portName;
         }
 
-        private void _notifyPropertyChanged([CallerMemberName] string propertyName = "")
+        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

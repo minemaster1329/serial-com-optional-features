@@ -23,9 +23,7 @@ namespace SerialCom.Backend
         private SerialPort _port;
         private SerialEnumConverter _converter;
 
-        private bool _disposed = false;
-
-        public event DataReceivedEventHandler? DataReceived;
+        public event EventHandler<DataReceivedEventArgs>? DataReceived;
 
         private SerialConfig _config;
         public SerialConfig Config
@@ -36,13 +34,13 @@ namespace SerialCom.Backend
                 if (value != _config)
                 {
                     _config = value;
-                    _config.PropertyChanged += _configChanged;
-                    _initPortFromConfig();
+                    _config.PropertyChanged += ConfigChanged;
+                    InitPortFromConfig();
                 }
             }
         }
 
-        public bool IsOpen{ get => _port.IsOpen; }
+        public bool IsOpen { get => _port.IsOpen; }
 
         public Rs232(string portName) : this(new SerialConfig(portName))
         { }
@@ -50,14 +48,14 @@ namespace SerialCom.Backend
         public Rs232(SerialConfig config)
         {
             _config = config;
-            Config.PropertyChanged += _configChanged;
+            Config.PropertyChanged += ConfigChanged;
 
             _port = new SerialPort();
             _converter = new SerialEnumConverter();
 
-            _initPortFromConfig();
+            InitPortFromConfig();
 
-            _port.DataReceived += _handleDataReceived;
+            _port.DataReceived += HandleDataReceived;
         }
 
         public void Open()
@@ -80,17 +78,27 @@ namespace SerialCom.Backend
             await Task.Run(() => WriteLine(line));
         }
 
-        private string _readPing()
+        private string ReadPing(Stopwatch stopwatch)
         {
-            string data = _port.ReadLine();
-            if (!data.StartsWith(_messageHeaders[MessageType.Ping]))
+            _port.DataReceived -= HandleDataReceived;
+            try
             {
-                throw new Exception("Invalid ping header"); // TODO
+                string data = _port.ReadLine();
+                stopwatch.Stop();
+                if (!data.StartsWith(_messageHeaders[MessageType.Ping]))
+                {
+                    throw new Exception("Invalid ping header"); // TODO
+                }
+
+                return data.Substring(_messageHeaders[MessageType.Ping].Length);
             }
-            return data.Substring(_messageHeaders[MessageType.Ping].Length);
+            finally
+            {
+                _port.DataReceived += HandleDataReceived;
+            }
         }
 
-        private void _writePing()
+        private void WritePing()
         {
             _port.WriteLine(_messageHeaders[MessageType.Ping]);
         }
@@ -98,12 +106,8 @@ namespace SerialCom.Backend
         public long Ping(Action? callback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            _writePing();
-            
-            _port.DataReceived -= _handleDataReceived;
-            string resp = _readPing();
-            stopwatch.Stop();
-            _port.DataReceived += _handleDataReceived;
+            WritePing();
+            string resp = ReadPing(stopwatch);
 
             callback?.Invoke();
             return stopwatch.ElapsedMilliseconds;
@@ -119,7 +123,7 @@ namespace SerialCom.Backend
             return SerialPort.GetPortNames();
         }
 
-        private void _configChanged(object? sender, PropertyChangedEventArgs args)
+        private void ConfigChanged(object? sender, PropertyChangedEventArgs args)
         {
             if (!string.IsNullOrEmpty(args.PropertyName))
             {
@@ -163,7 +167,7 @@ namespace SerialCom.Backend
             }
         }
 
-        private void _initPortFromConfig()
+        private void InitPortFromConfig()
         {
             _port.PortName = Config.PortName;
             _port.BaudRate = (int)Config.BaudRate;
@@ -178,12 +182,12 @@ namespace SerialCom.Backend
             _port.WriteTimeout = Config.WriteTimeout;
         }
 
-        private void _handleDataReceived(object? sender, SerialDataReceivedEventArgs args)
+        private void HandleDataReceived(object sender, SerialDataReceivedEventArgs args)
         {
             string data = _port.ReadLine();
             if (data.StartsWith(_messageHeaders[MessageType.Ping]))
             {
-                _writePing();
+                WritePing();
             }
             if (data.StartsWith(_messageHeaders[MessageType.Text]))
             {
@@ -193,6 +197,8 @@ namespace SerialCom.Backend
         }
 
         #region IDisposable
+
+        private bool _disposed = false;
 
         public void Dispose()
         {
@@ -210,8 +216,9 @@ namespace SerialCom.Backend
                     {
                         _port.Close();
                     }
-                    _port.DataReceived -= _handleDataReceived;
+                    _port.DataReceived -= HandleDataReceived;
                     _port.Dispose();
+                    _config.PropertyChanged -= ConfigChanged;
                 }
                 _disposed = true;
             }
