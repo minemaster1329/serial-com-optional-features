@@ -33,8 +33,12 @@ namespace SerialCom.Backend
             get => _config;
             set
             {
-                _config = value;
-                _initPortFromConfig();
+                if (value != _config)
+                {
+                    _config = value;
+                    _config.PropertyChanged += _configChanged;
+                    _initPortFromConfig();
+                }
             }
         }
 
