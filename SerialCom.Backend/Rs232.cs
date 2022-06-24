@@ -19,7 +19,7 @@ namespace SerialCom.Backend
                 [MessageType.Text] = @"\t\",
                 [MessageType.Ping] = @"\p\",
             };
-        
+
         private SerialPort _port;
         private SerialEnumConverter _converter;
 
@@ -33,6 +33,7 @@ namespace SerialCom.Backend
             {
                 if (value != _config)
                 {
+                    _config.PropertyChanged -= ConfigChanged;
                     _config = value;
                     _config.PropertyChanged += ConfigChanged;
                     InitPortFromConfig();
@@ -144,7 +145,7 @@ namespace SerialCom.Backend
                     case nameof(Config.Terminator):
                         _port.NewLine = Config.Terminator;
                         break;
-                    
+
                     // Enums:
                     case nameof(Config.Parity):
                         _port.Parity = _converter.ParityTypeToParity(Config.Parity);
@@ -155,13 +156,13 @@ namespace SerialCom.Backend
                     case nameof(Config.FlowControl):
                         _port.Handshake = _converter.FlowControlTypeToHandshake(Config.FlowControl);
                         break;
-                    
+
                     // Timeouts:
                     case nameof(Config.ReadTimeout):
                         _port.ReadTimeout = Config.ReadTimeout;
                         break;
                     case nameof(Config.WriteTimeout):
-                        _port.ReadTimeout = Config.WriteTimeout;
+                        _port.WriteTimeout = Config.WriteTimeout;
                         break;
                 }
             }
