@@ -104,19 +104,19 @@ namespace SerialCom.Backend
             _port.WriteLine(_messageHeaders[MessageType.Ping]);
         }
 
-        public long Ping(Action? callback = null)
+        public long Ping(Action<long>? callback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             WritePing();
             string resp = ReadPing(stopwatch);
 
-            callback?.Invoke();
+            callback?.Invoke(stopwatch.ElapsedMilliseconds);
             return stopwatch.ElapsedMilliseconds;
         }
 
-        public async Task<long> PingAsync()
+        public async Task<long> PingAsync(Action<long>? callback = null)
         {
-            return await Task.Run(() => Ping());
+            return await Task.Run(() => Ping(callback));
         }
 
         public static string[] GetPortNames()
