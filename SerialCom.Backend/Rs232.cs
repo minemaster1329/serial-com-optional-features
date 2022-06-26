@@ -20,6 +20,8 @@ namespace SerialCom.Backend
                 [MessageType.Ping] = @"\p\",
             };
 
+        private const int HandshakePollDelay = 10;
+
         private SerialPort _port;
         private SerialEnumConverter _converter;
 
@@ -61,16 +63,19 @@ namespace SerialCom.Backend
 
         public void Open()
         {
+            _port.DtrEnable = true;
             _port.Open();
         }
 
         public void Close()
         {
             _port.Close();
+            _port.DtrEnable = false;
         }
 
         public void WriteLine(string line)
         {
+            Handshake(Config.WriteTimeout);
             _port.WriteLine(_messageHeaders[MessageType.Text] + line);
         }
 
@@ -81,6 +86,7 @@ namespace SerialCom.Backend
 
         private string ReadPing(Stopwatch stopwatch)
         {
+            Handshake(Config.ReadTimeout);
             _port.DataReceived -= HandleDataReceived;
             try
             {
@@ -101,6 +107,7 @@ namespace SerialCom.Backend
 
         private void WritePing()
         {
+            Handshake(Config.WriteTimeout);
             _port.WriteLine(_messageHeaders[MessageType.Ping]);
         }
 
@@ -181,6 +188,8 @@ namespace SerialCom.Backend
 
             _port.ReadTimeout = Config.ReadTimeout;
             _port.WriteTimeout = Config.WriteTimeout;
+
+            _port.DtrEnable = false;
         }
 
         private void HandleDataReceived(object sender, SerialDataReceivedEventArgs args)
@@ -194,6 +203,27 @@ namespace SerialCom.Backend
             {
                 string dataToSend = data.Substring(_messageHeaders[MessageType.Text].Length);
                 DataReceived?.Invoke(this, new DataReceivedEventArgs(dataToSend));
+            }
+        }
+
+        private void Handshake(int timeout)
+        {
+            if (Config.FlowControl != FlowControlType.DtrDsr)
+            {
+                return;
+            }
+
+            int elapsed = 0;
+
+            _port.DtrEnable = true;
+            while (!_port.DsrHolding)
+            {
+                Thread.Sleep(HandshakePollDelay);
+                elapsed += HandshakePollDelay;
+                if (elapsed >= timeout)
+                {
+                    throw new TimeoutException("DSR timeout");
+                }
             }
         }
 

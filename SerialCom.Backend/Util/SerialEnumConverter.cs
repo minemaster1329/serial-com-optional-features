@@ -39,8 +39,6 @@ namespace SerialCom.Backend.Util
         {
             switch (stopBits)
             {
-                case StopBits.None:
-                    return StopBitsCount.None;
                 case StopBits.One:
                     return StopBitsCount.One;
                 case StopBits.Two:
@@ -54,8 +52,6 @@ namespace SerialCom.Backend.Util
         {
             switch (stopBitsCount)
             {
-                case StopBitsCount.None:
-                    return StopBits.None;
                 case StopBitsCount.One:
                     return StopBits.One;
                 case StopBitsCount.Two:

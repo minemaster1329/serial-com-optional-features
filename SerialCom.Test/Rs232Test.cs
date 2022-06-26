@@ -7,9 +7,11 @@ namespace SerialCom.Test
     {
         private SerialConfig _conf1;
         private Rs232 _port1;
+        private readonly AutoResetEvent _wait1;
 
         private SerialConfig _conf2;
         private Rs232 _port2;
+        private readonly AutoResetEvent _wait2;
 
         private readonly string _port1Name = "COM6";
         private readonly string _port2Name = "COM7";
@@ -23,6 +25,7 @@ namespace SerialCom.Test
                 WriteTimeout = _timeout
             };
             _port1 = new Rs232(_conf1);
+            _wait1 = new AutoResetEvent(false);
 
             _conf2 = new SerialConfig(_port2Name)
             {
@@ -30,6 +33,7 @@ namespace SerialCom.Test
                 WriteTimeout = _timeout
             };
             _port2 = new Rs232(_conf2);
+            _wait2 = new AutoResetEvent(false);
         }
 
         public void Dispose()
@@ -64,18 +68,17 @@ namespace SerialCom.Test
         {
             const string line = "Test";
             string? response = null;
-            AutoResetEvent waitHandle = new AutoResetEvent(false);
             _port2.DataReceived += (sender, args) =>
             {
                 response = args.Data;
-                waitHandle.Set();
+                _wait1.Set();
             };
 
             _port1.Open();
             _port2.Open();
             _port1.WriteLine(line);
 
-            Assert.True(waitHandle.WaitOne(5000, false));
+            Assert.True(_wait1.WaitOne(5000, false));
             Assert.Equal(line, response);
         }
 
@@ -84,19 +87,17 @@ namespace SerialCom.Test
         {
             const string line1 = "Test";
             const string line2 = "MoRbIuS";
-            AutoResetEvent waitHandle1 = new AutoResetEvent(false);
-            AutoResetEvent waitHandle2 = new AutoResetEvent(false);
             string? resp1 = null, resp2 = null;
 
             _port1.DataReceived += (sender, args) =>
             {
                 resp2 = args.Data;
-                waitHandle1.Set();
+                _wait1.Set();
             };
             _port2.DataReceived += (sender, args) =>
             {
                 resp1 = args.Data;
-                waitHandle2.Set();
+                _wait2.Set();
             };
 
             _port1.Open();
@@ -104,14 +105,64 @@ namespace SerialCom.Test
             _port1.WriteLine(line1);
             _port2.WriteLine(line2);
 
-            Assert.True(waitHandle1.WaitOne(5000, false));
-            Assert.True(waitHandle2.WaitOne(5000, false));
+            Assert.True(_wait1.WaitOne(5000, false));
+            Assert.True(_wait2.WaitOne(5000, false));
 
             Assert.NotNull(resp1);
             Assert.NotNull(resp2);
 
             Assert.Equal(line1, resp1);
             Assert.Equal(line2, resp2);
+        }
+
+        [Fact]
+        public void ShouldTransmitWithDtr()
+        {
+            const string line1 = "Test";
+            const string line2 = "MoRbIuS";
+            string? resp1 = null, resp2 = null;
+            _port1.Config.FlowControl = FlowControlType.DtrDsr;
+            _port1.DataReceived += (sender, args) =>
+            {
+                resp2 = args.Data;
+                _wait1.Set();
+            };
+
+            _port2.Config.FlowControl = FlowControlType.DtrDsr;
+            _port2.DataReceived += (sender, args) =>
+            {
+                resp1 = args.Data;
+                _wait2.Set();
+            };
+
+            _port1.Open();
+            _port2.Open();
+            _port1.WriteLine(line1);
+            _port2.WriteLine(line2);
+
+            Assert.True(_wait1.WaitOne(5000, false));
+            Assert.True(_wait2.WaitOne(5000, false));
+
+            Assert.NotNull(resp1);
+            Assert.NotNull(resp2);
+
+            Assert.Equal(line1, resp1);
+            Assert.Equal(line2, resp2);
+        }
+
+        [Fact]
+        public void ShouldPongAfterPingWithDtr()
+        {
+            _port1.Config.FlowControl = FlowControlType.DtrDsr;
+            _port2.Config.FlowControl = FlowControlType.DtrDsr;
+            long? time = null;
+            
+            _port1.Open();
+            _port2.Open();
+
+            time = _port1.Ping();
+
+            Assert.NotNull(time);
         }
     }
 }
