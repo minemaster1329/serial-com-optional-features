@@ -38,7 +38,6 @@
 
     public enum StopBitsCount
     {
-        None,
         One,
         Two
     }
