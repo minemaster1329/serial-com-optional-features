@@ -1,0 +1,104 @@
+﻿<Window x:Class="SerialCom.Frontend.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SerialCom.Frontend"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="700" Width="800" ResizeMode="NoResize">
+    <Window.Resources>
+        <local:MainWindowViewModel x:Key="MainWindowViewModel"/>
+        <local:BooleanToStringValueConverter x:Key="PortConnectedStateToStringConverter" TrueString="Disconnect" FalseString="Connect"/>
+    </Window.Resources>
+    <Grid DataContext="{StaticResource MainWindowViewModel}" Name="MainGrid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <GroupBox Header="Ustawienia" Grid.Row="1" Margin="5">
+            <Grid Margin="0, 5, 0,0" DataContext="{StaticResource MainWindowViewModel}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"></RowDefinition>
+                    <RowDefinition Height="50"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="50"></RowDefinition>
+                    <RowDefinition Height="110"></RowDefinition>
+                </Grid.RowDefinitions>
+                <GroupBox Header="Wybór portu">
+                    <ComboBox ItemsSource="{Binding PortNames}" SelectedIndex="{Binding SelectedPort}"></ComboBox>
+                </GroupBox>
+                <GroupBox Header="Prędkość transmisji" Grid.Row="1">
+                    <ComboBox ItemsSource="{Binding BaudRateValues}" SelectedIndex="{Binding SelectedBaudRateValue}"></ComboBox>
+                </GroupBox>
+                <GroupBox Header="Format znaku" Grid.Row="2">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <GroupBox Header="Bity danych">
+                            <ComboBox SelectedIndex="{Binding SelectedDataBitsCount}">
+                                <ComboBoxItem>7</ComboBoxItem>
+                                <ComboBoxItem>8</ComboBoxItem>
+                            </ComboBox>
+                        </GroupBox>
+                        <GroupBox Header="Parzystość" Grid.Row="1">
+                            <ComboBox ItemsSource="{Binding ParityValues}" SelectedIndex="{Binding SelectedParity}"></ComboBox>
+                        </GroupBox>
+                        <GroupBox Header="Bity stopu"  Grid.Row="2">
+                            <ComboBox ItemsSource="{Binding StopBitsCountValues}" SelectedIndex="{Binding SelectedStopBitsCount}"></ComboBox>
+                        </GroupBox>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Header="Kontrola przepływu" Grid.Row="3">
+                    <ComboBox ItemsSource="{Binding FlowControlValues}" SelectedIndex="{Binding SelectedFlowControlValues}"></ComboBox>
+                </GroupBox>
+                <GroupBox Header="Wybór terminatora" Grid.Row="4">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <ComboBox Margin="2" SelectedIndex="{Binding SelectedTerminator}">
+                            <ComboBoxItem>No Terminator</ComboBoxItem>
+                            <ComboBoxItem>CR</ComboBoxItem>
+                            <ComboBoxItem>LF</ComboBoxItem>
+                            <ComboBoxItem>CR-LF</ComboBoxItem>
+                            <ComboBoxItem>Custom</ComboBoxItem>
+                        </ComboBox>
+                        <TextBlock Text="Wpisz terminator:" Grid.Row="1" Margin="2"></TextBlock>
+                        <TextBox Grid.Row="2" Margin="2" Text="{Binding CustomTerminator}" MaxLines="1" IsEnabled="{Binding CustomTerminatorInputEnabled}"></TextBox>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+        </GroupBox>
+        <Button Grid.Row="5" Margin="5" Content="{Binding Connected, Mode=OneWay, Converter={StaticResource PortConnectedStateToStringConverter}}" Command="{Binding ConnectButtonCommand}"/>
+        <GroupBox Header="Wiadomość" Margin="5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBox Text="{Binding Message}" Margin="2" Grid.ColumnSpan="3"></TextBox>
+                <Button Content="Wyślij" Grid.Row="1" Margin="2" Command="{Binding SendMessageButtonCommand}"/>
+                <Button Content="Wyczyść" Grid.Row="1" Margin="2" Grid.Column="1" Command="{Binding ClearMessageInput}"/>
+                <Button Content="Ping" Grid.Row="1" Margin="2" Grid.Column="2" Command="{Binding PingButtonCommand}"/>
+            </Grid>
+        </GroupBox>
+        <GroupBox Grid.Column="1" Header="Odebrane" Grid.RowSpan="3" Margin="5">
+            <ListBox ItemsSource="{Binding ReceivedList, Mode=OneWay}" Margin="0,5,0,0"/>
+        </GroupBox>
+    </Grid>
+</Window>

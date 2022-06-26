@@ -11,8 +11,8 @@ namespace SerialCom.Test
         private SerialConfig _conf2;
         private Rs232 _port2;
 
-        private readonly string _port1Name = "COM1";
-        private readonly string _port2Name = "COM2";
+        private readonly string _port1Name = "COM6";
+        private readonly string _port2Name = "COM7";
         private readonly int _timeout = 2000;
 
         public Rs232Test()
