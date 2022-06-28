@@ -148,7 +148,6 @@ namespace SerialCom.Frontend
                         _portRs232.Open();
                         _portRs232.DataReceived += HandleMessageReceived;
                         Connected = true;
-                        _portRs232.WriteLine("XD");
                     }
                     catch (Exception e)
                     {
@@ -184,10 +183,20 @@ namespace SerialCom.Frontend
 
         private void HandleMessageReceived(object? sender, DataReceivedEventArgs args)
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            if (args.Exception is not null)
             {
-                ReceivedList.Add(args.Data);
-            });
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    ReceivedList.Add($"Error when receiving data: {args.Exception.Message}.");
+                });
+            }
+            else
+            {
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    ReceivedList.Add(args.Data);
+                });
+            }
         }
     }
 }

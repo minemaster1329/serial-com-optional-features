@@ -194,7 +194,16 @@ namespace SerialCom.Backend
 
         private void HandleDataReceived(object sender, SerialDataReceivedEventArgs args)
         {
-            string data = _port.ReadLine();
+            string data = "";
+            try
+            { 
+                data = _port.ReadLine();
+            }
+            catch (Exception ex)
+            {
+                DataReceived?.Invoke(this, new DataReceivedEventArgs("", ex));
+                return;
+            }
             if (data.StartsWith(_messageHeaders[MessageType.Ping]))
             {
                 WritePing();

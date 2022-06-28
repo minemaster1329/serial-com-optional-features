@@ -79,7 +79,7 @@
                 </GroupBox>
             </Grid>
         </GroupBox>
-        <Button Grid.Row="5" Margin="5" Content="{Binding Connected, Mode=OneWay, Converter={StaticResource PortConnectedStateToStringConverter}}" Command="{Binding ConnectButtonCommand}"/>
+        <Button Grid.Row="2" Margin="5" Content="{Binding Connected, Mode=OneWay, Converter={StaticResource PortConnectedStateToStringConverter}}" Command="{Binding ConnectButtonCommand}"/>
         <GroupBox Header="Wiadomość" Margin="5">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -97,7 +97,7 @@
                 <Button Content="Ping" Grid.Row="1" Margin="2" Grid.Column="2" Command="{Binding PingButtonCommand}"/>
             </Grid>
         </GroupBox>
-        <GroupBox Grid.Column="1" Header="Odebrane" Grid.RowSpan="3" Margin="5">
+        <GroupBox Grid.Column="1" Header="Odebrane" Grid.RowSpan="2" Margin="5">
             <ListBox ItemsSource="{Binding ReceivedList, Mode=OneWay}" Margin="0,5,0,0"/>
         </GroupBox>
     </Grid>
