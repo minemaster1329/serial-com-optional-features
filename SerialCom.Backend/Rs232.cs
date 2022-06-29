@@ -69,14 +69,21 @@ namespace SerialCom.Backend
 
         public void Close()
         {
-            _port.Close();
             _port.DtrEnable = false;
+            _port.Close();
         }
 
         public void WriteLine(string line)
         {
             Handshake(Config.WriteTimeout);
-            _port.WriteLine(_messageHeaders[MessageType.Text] + line);
+            try
+            {
+                _port.WriteLine(_messageHeaders[MessageType.Text] + line);
+            }
+            catch (Exception e)
+            {
+                InvokeException(e);
+            }
         }
 
         public async Task WriteLineAsync(string line)
@@ -113,12 +120,21 @@ namespace SerialCom.Backend
 
         public long Ping(Action<long>? callback = null)
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            WritePing();
-            string resp = ReadPing(stopwatch);
+            long elapsed = 0;
+            try
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                WritePing();
+                string resp = ReadPing(stopwatch);
+                elapsed = stopwatch.ElapsedMilliseconds;
+            }
+            catch (Exception e)
+            {
+                InvokeException(e);
+            }
 
-            callback?.Invoke(stopwatch.ElapsedMilliseconds);
-            return stopwatch.ElapsedMilliseconds;
+            callback?.Invoke(elapsed);
+            return elapsed;
         }
 
         public async Task<long> PingAsync(Action<long>? callback = null)
@@ -194,21 +210,22 @@ namespace SerialCom.Backend
 
         private void HandleDataReceived(object sender, SerialDataReceivedEventArgs args)
         {
-            string data = "";
+            string data;
             try
             { 
                 data = _port.ReadLine();
             }
             catch (Exception ex)
             {
-                DataReceived?.Invoke(this, new DataReceivedEventArgs("", ex));
+                InvokeException(ex);
                 return;
             }
+
             if (data.StartsWith(_messageHeaders[MessageType.Ping]))
             {
                 WritePing();
             }
-            if (data.StartsWith(_messageHeaders[MessageType.Text]))
+            else if (data.StartsWith(_messageHeaders[MessageType.Text]))
             {
                 string dataToSend = data.Substring(_messageHeaders[MessageType.Text].Length);
                 DataReceived?.Invoke(this, new DataReceivedEventArgs(dataToSend));
@@ -234,6 +251,11 @@ namespace SerialCom.Backend
                     throw new TimeoutException("DSR timeout");
                 }
             }
+        }
+
+        private void InvokeException(Exception e)
+        {
+            DataReceived?.Invoke(this, new DataReceivedEventArgs("", e));
         }
 
         #region IDisposable
