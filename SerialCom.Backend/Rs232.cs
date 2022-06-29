@@ -75,7 +75,11 @@ namespace SerialCom.Backend
 
         public void WriteLine(string line)
         {
-            Handshake(Config.WriteTimeout);
+            if (!Handshake(Config.WriteTimeout))
+            {
+                return;
+            }
+
             try
             {
                 _port.WriteLine(_messageHeaders[MessageType.Text] + line);
@@ -93,7 +97,11 @@ namespace SerialCom.Backend
 
         private string ReadPing(Stopwatch stopwatch)
         {
-            Handshake(Config.ReadTimeout);
+            if (!Handshake(Config.ReadTimeout))
+            {
+                return "";
+            }
+
             _port.DataReceived -= HandleDataReceived;
             try
             {
@@ -114,7 +122,11 @@ namespace SerialCom.Backend
 
         private void WritePing()
         {
-            Handshake(Config.WriteTimeout);
+            if (!Handshake(Config.WriteTimeout))
+            {
+                return;
+            }
+
             _port.WriteLine(_messageHeaders[MessageType.Ping]);
         }
 
@@ -232,11 +244,11 @@ namespace SerialCom.Backend
             }
         }
 
-        private void Handshake(int timeout)
+        private bool Handshake(int timeout)
         {
             if (Config.FlowControl != FlowControlType.DtrDsr)
             {
-                return;
+                return true;
             }
 
             int elapsed = 0;
@@ -248,9 +260,11 @@ namespace SerialCom.Backend
                 elapsed += HandshakePollDelay;
                 if (elapsed >= timeout)
                 {
-                    throw new TimeoutException("DSR timeout");
+                    InvokeException(new TimeoutException("DSR timeout"));
+                    return false;
                 }
             }
+            return true;
         }
 
         private void InvokeException(Exception e)
