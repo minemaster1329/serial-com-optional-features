@@ -1,15 +1,9 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO.Ports;
-using System.Linq;
-using System.Management;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using SerialCom.Backend;
 using SerialCom.Backend.Config;
@@ -48,8 +42,10 @@ namespace SerialCom.Frontend
                 _connected = value;
                 OnPropertyChanged();
                 OnPropertyChanged("ConnectButtonText");
+                OnPropertyChanged(nameof(ConfigEnabled));
             }
         }
+        public bool ConfigEnabled { get => !_connected; }
         public string CustomTerminator { get; set; }
 
         public int SelectedPort { get; set; } = -1;
@@ -122,24 +118,25 @@ namespace SerialCom.Frontend
             }
             else
             {
-                if (SelectedPort != -1)
+                if (CheckConfig())
                 {
                     string serialPortName = PortNames[SelectedPort];
                     SerialConfig serialConfig = new SerialConfig(serialPortName);
                     serialConfig.BaudRate = (BaudRateValue)_baudRatesValues[SelectedBaudRateValue];
                     serialConfig.DataBits = _dataBits[SelectedDataBitsCount];
-                    serialConfig.FlowControl = (FlowControlType) SelectedFlowControlValues;
-                    serialConfig.Parity = (ParityType) SelectedParity;
+                    serialConfig.FlowControl = (FlowControlType)SelectedFlowControlValues;
+                    serialConfig.Parity = (ParityType)SelectedParity;
                     serialConfig.ReadTimeout = 500;
                     serialConfig.WriteTimeout = 500;
-                    serialConfig.StopBits = (StopBitsCount) SelectedStopBitsCount;
+                    serialConfig.StopBits = (StopBitsCount)SelectedStopBitsCount;
                     serialConfig.Terminator = SelectedTerminator switch
                     {
                         0 => "\0",
                         1 => "\r",
                         2 => "\n",
                         3 => "\r\n",
-                        4 => CustomTerminator
+                        4 => CustomTerminator,
+                        _ => "\n"
                     };
 
                     _portRs232 = new Rs232(serialConfig);
@@ -154,8 +151,10 @@ namespace SerialCom.Frontend
                         MessageBox.Show(e.Message);
                     }
                 }
-
-                else MessageBox.Show("Please select port!");
+                else
+                {
+                    MessageBox.Show("Invalid config");
+                }
             }
         }
 
@@ -187,7 +186,7 @@ namespace SerialCom.Frontend
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    ReceivedList.Add($"Error when receiving data: {args.Exception.Message}.");
+                    ReceivedList.Add($"Error: {args.Exception.Message}");
                 });
             }
             else
@@ -197,6 +196,22 @@ namespace SerialCom.Frontend
                     ReceivedList.Add(args.Data);
                 });
             }
+        }
+
+        private bool CheckConfig()
+        {
+            var configValues = new List<int>
+            {
+                SelectedPort,
+                SelectedBaudRateValue,
+                SelectedDataBitsCount,
+                SelectedFlowControlValues,
+                SelectedParity,
+                SelectedStopBitsCount,
+                SelectedTerminator
+            };
+
+            return !configValues.Contains(-1);
         }
     }
 }
