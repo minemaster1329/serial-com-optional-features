@@ -27,12 +27,33 @@ namespace SerialCom.Frontend
         private Rs232? _portRs232;
         private int _selectedTerminatorIndex = -1;
         private readonly ObservableCollection<string> _receivedList;
+        private bool _ctsState;
+        private bool _dsrState;
 
         public event PropertyChangedEventHandler PropertyChanged;
         public RelaySyncCommand ConnectButtonCommand { get; set; }
         public RelaySyncCommand PingButtonCommand { get; set; }
         public RelaySyncCommand SendMessageButtonCommand { get; set; } 
         public RelaySyncCommand ClearMessageInput { get; set; }
+        public bool CtsState
+        {
+            get => _ctsState;
+            set
+            {
+                _ctsState = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool DsrState
+        {
+            get => _dsrState;
+            set
+            {
+                _dsrState = value;
+                OnPropertyChanged();
+            }
+        }
         public string Message { get; set; }
         public bool Connected
         {
@@ -145,6 +166,8 @@ namespace SerialCom.Frontend
                         _portRs232.Open();
                         _portRs232.DataReceived += HandleMessageReceived;
                         Connected = true;
+                        CtsState = false;
+                        DsrState = false;
                     }
                     catch (Exception e)
                     {
@@ -196,6 +219,11 @@ namespace SerialCom.Frontend
                     ReceivedList.Add(args.Data);
                 });
             }
+        }
+
+        private void HandleCtsDsrChanged(object sender, CtsDsrChangedEventArgs e)
+        {
+
         }
 
         private bool CheckConfig()

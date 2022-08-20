@@ -6,6 +6,7 @@ using System.IO.Ports;
 
 namespace SerialCom.Backend
 {
+    public delegate void CtsDsrChangedEventHandler(object sender, CtsDsrChangedEventArgs args);
     public class Rs232 : IDisposable
     {
         private enum MessageType
@@ -26,6 +27,7 @@ namespace SerialCom.Backend
         private SerialEnumConverter _converter;
 
         public event EventHandler<DataReceivedEventArgs>? DataReceived;
+        public event CtsDsrChangedEventHandler? CtsDsrChanged;
 
         private SerialConfig _config;
         public SerialConfig Config
@@ -59,6 +61,15 @@ namespace SerialCom.Backend
             InitPortFromConfig();
 
             _port.DataReceived += HandleDataReceived;
+            _port.PinChanged += PortOnPinChanged;
+        }
+
+        private void PortOnPinChanged(object sender, SerialPinChangedEventArgs e)
+        {
+            if (e.EventType is SerialPinChange.CtsChanged or SerialPinChange.DsrChanged)
+            {
+                CtsDsrChanged?.Invoke(this, new CtsDsrChangedEventArgs(){_ctsState = _port.CtsHolding, _dsrState = _port.DsrHolding});
+            }
         }
 
         public void Open()
